@@ -1,1 +1,1 @@
-Fetch all balls from table mask
+pooltable3.jpg is giving wrong contour from getBalls

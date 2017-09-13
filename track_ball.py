@@ -105,9 +105,6 @@ def	isolateTable(image, table_contour):
 
 	return cropped
 
-	# Crop image according to table
-# params: image, table_contour
-# return: image cropped to 'table_contour' size
 def initTable(image):
 	img = loadImage(image)
 	hsv = toHSV(img)
@@ -121,7 +118,7 @@ def initTable(image):
 	cv2.imshow('image', img)
 	cv2.imshow('mask', mask)
 	
-initTable('pooltable.png')
+initTable('pooltable3.jpg')
 
 
 while 1:
