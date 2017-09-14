@@ -22,21 +22,25 @@ def getDist(x1, y1, x2, y2):
     return np.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1))
 
 # Get table mask
-# params: image, search_range = 45, shadow_intensity = 20
-# return: table mask
-def getTableMask(image, search_range = 45, shadow_intensity = 20):
+# params: image, search_range = 45, shadow_intensity = 20, blur = True
+# return: guessed table mask
+def getTableMask(image, search_range = 45, shadow_intensity = 20, blur = True):
     # Get most common color in 'image' with a certain color range
-	min_color, max_color = getTableColor(image, search_range, shadow_intensity)
-	
-	#Get mask that fits the previous gotten color range
-	mask = cv2.inRange(image, min_color, max_color)
-	
-	# Blur mask
-	clean_mask = cv2.dilate(mask, None, iterations=1)
-	clean_mask = cv2.bilateralFilter(clean_mask, 3, 175, 175)
-	
-	return clean_mask
-	
+    min_color, max_color = getTableColor(image, search_range, shadow_intensity)
+
+    #Get mask that fits the previous gotten color range
+    mask = cv2.inRange(image, min_color, max_color)
+    # Blur mask
+    if blur:
+        mask = cv2.dilate(mask, None, iterations=1)
+        mask = cv2.bilateralFilter(mask, 3, 175, 175)
+
+    return mask
+
+def getBallMask(image):
+    ball_mask = getTableMask(image, blur = False)
+    return ball_mask
+
 # Get table color
 # params: image, search_range
 # return: guessed minimum color and maximum color of inputted image
@@ -89,7 +93,7 @@ def getBallsContour(table_mask):
 		area = cv2.contourArea(contour)
 		if len(points) > 8 and area > 70:
 			balls.append(contour)
-			
+	print(len(balls))
 	return balls
 
 # Crop image according to table
@@ -100,25 +104,25 @@ def	isolateTable(image, table_contour):
 	print([int(corners[1][1]),int(corners[3][1]), int(corners[1][0]),int(corners[3][0])])
 	# Crop by slicing array in this order: start y, end y, start x, end x
 	cropped = image[int(corners[1][1]):int(corners[3][1]), int(corners[1][0]):int(corners[3][0])]
-	imutils.resize(cropped, height=500)
-	cv2.imshow('dank', cropped)
-
+	cropped = imutils.resize(cropped, width=500)
 	return cropped
 
 def initTable(image):
-	img = loadImage(image)
-	hsv = toHSV(img)
-	mask = getTableMask(hsv)
-	table_contour = getTableContour(mask)
-	balls = getBallsContour(mask)
-	isolateTable(img, table_contour)
+    img = loadImage(image)
+    hsv = toHSV(img)
+    mask = getTableMask(hsv)
+    table_contour = getTableContour(mask)
+    balls = getBallsContour(mask)
+    cropped = isolateTable(img, table_contour)
+    ball_mask = getBallMask(img)
+    #debug
+    cv2.drawContours(img, balls, -1, (0,255,0), 1)
+    cv2.imshow('image', img)
+    cv2.imshow('mask', mask)
+    cv2.imshow('cropped', cropped)
+    cv2.imshow('balls', ball_mask)
 	
-	#debug
-	cv2.drawContours(img, balls, -1, (0,255,0), 1)
-	cv2.imshow('image', img)
-	cv2.imshow('mask', mask)
-	
-initTable('pooltable3.jpg')
+initTable('img\pooltable.png')
 
 
 while 1:
