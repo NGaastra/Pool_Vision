@@ -1,3 +1,5 @@
+from re import sub
+
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
@@ -37,9 +39,12 @@ def getTableMask(image, search_range = 45, shadow_intensity = 20, blur = True):
 
     return mask
 
-def getBallMask(image):
-    ball_mask = getTableMask(image, blur = False)
-    return ball_mask
+def getBallMask(image, bg):
+    # Subtract background
+    ball_mask = subBackground(bg, image)
+    ball_mask = cv2.morphologyEx(ball_mask, cv2.MORPH_OPEN, None)
+    masked_image = cv2.bitwise_and(image, image, mask = ball_mask)
+    return ball_mask, masked_image
 
 # Get table color
 # params: image, search_range
@@ -85,16 +90,9 @@ def getTableCorners(table_contour):
 # Get all balls from table
 # params: table_mask
 # return: gets all balls that can be detected in 'table_mask'
-def getBallsContour(table_mask):
-	_, contours, _ = cv2.findContours(table_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-	balls = []
-	for contour in contours:
-		points = cv2.approxPolyDP(contour, 0.01 * cv2.arcLength(contour, True), True)
-		area = cv2.contourArea(contour)
-		if len(points) > 8 and area > 70:
-			balls.append(contour)
-	print(len(balls))
-	return balls
+def getBallsContour(ball_mask):
+	_, contours, _ = cv2.findContours(ball_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+	return contours
 
 # Crop image according to table
 # params: image, table_contour
@@ -107,19 +105,40 @@ def	isolateTable(image, table_contour):
 	cropped = imutils.resize(cropped, width=500)
 	return cropped
 
+def subBackground(bg, image):
+    bg_mask = cv2.bitwise_not(getTableMask(toHSV(bg)))
+    table_mask = cv2.bitwise_not(getTableMask(toHSV(image)))
+
+    return table_mask - bg_mask
+
+def drawMean(mask, image):
+    _, contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+    final = np.zeros(image.shape, np.uint8)
+    single_mask = np.zeros(mask.shape, np.uint8)
+
+    for i in range(len(contours)):
+        mask[...] = 0
+        cv2.drawContours(mask, contours, i, 255, -1)
+        cv2.drawContours(final, contours, i, cv2.mean(image, mask), -1)
+
+        cv2.imshow('dddd', final)
+
 def initTable(image):
-    img = loadImage(image)
-    hsv = toHSV(img)
+    table = loadImage(image)
+    bg = loadImage('img\pooltableempty.png')
+    hsv = toHSV(table)
     mask = getTableMask(hsv)
     table_contour = getTableContour(mask)
     balls = getBallsContour(mask)
-    cropped = isolateTable(img, table_contour)
-    ball_mask = getBallMask(img)
+    cropped = isolateTable(table, table_contour)
+    ball_mask, masked_im = getBallMask(table, bg)
+    contours = getBallsContour(ball_mask)
+    drawMean(ball_mask, table)
     #debug
-    cv2.drawContours(img, balls, -1, (0,255,0), 1)
-    cv2.imshow('image', img)
+    cv2.imshow('image', table)
     cv2.imshow('mask', mask)
-    cv2.imshow('cropped', cropped)
+    cv2.imshow('cropped', masked_im)
     cv2.imshow('balls', ball_mask)
 	
 initTable('img\pooltable.png')
