@@ -72,12 +72,12 @@ def getTableColor(hsv, search_range, shadow_intensity):
 # params: table_mask
 # return: biggest contour detected (which is the table)
 def getTableContour(table_mask):
-	# Get all contours in given mask
-	_, contours, _ = cv2.findContours(table_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    # Get all contours in given mask
+    _, contours, _ = cv2.findContours(table_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 	
-	#Sort contours by area from high to low and get first entry
-	table_contour = sorted(contours, key=cv2.contourArea, reverse=True)[0]
-	return table_contour
+    #Sort contours by area from high to low and get first entry
+    table_contour = sorted(contours, key=cv2.contourArea, reverse=True)[0]
+    return table_contour
 	
 # Get table corners
 # params: table_contour
@@ -115,7 +115,6 @@ def drawMean(mask, image):
     _, contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     final = np.zeros(image.shape, np.uint8)
-    single_mask = np.zeros(mask.shape, np.uint8)
 
     for i in range(len(contours)):
         mask[...] = 0
