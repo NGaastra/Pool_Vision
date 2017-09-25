@@ -33,8 +33,20 @@ class Table:
         self.table_contour = self.getTableContour(self.table_mask)
         self.table_cropped = self.isolateTable(self.table_bg, self.table_contour)
 
+        self.perUpdate()
+
+    def perUpdate(self):
+        # Load video feed
         self.table_cur = loadImage('img\pooltable.png')
+
+        # Get mask from video feed
         self.table_cur_mask = self.getTableMask(toHSV(self.table_cur))
+
+        # Get ball mask
+        self.ball_mask, _ = self.getBallMask(self.table_cur)
+
+        # Draw mean balls
+        self.ball_colors = self.drawMean()
 
     # Get table mask
     # params: image, search_range = 45, shadow_intensity = 20, blur = True
@@ -129,7 +141,7 @@ class Table:
         return table_mask - bg_mask
 
     def drawMean(self):
-        _, contours, _ = cv2.findContours(self.table_cur_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        _, contours, _ = cv2.findContours(self.ball_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
         final = np.zeros(self.table_cur.shape, np.uint8)
         mask = np.zeros(self.table_cur.shape, np.uint8)
@@ -142,13 +154,16 @@ class Table:
 
         return final
 
+    def disconnectBlob(self):
+        
+
 def initTable(table_bg):
     table = Table(table_bg)
     ball_mask, test_mask = table.getBallMask(loadImage('img\pooltable.png'))
-    table.drawMean()
+    #table.drawMean()
     #debug
-    cv2.imshow('bg', table.table_mask)
-    cv2.imshow('bm', ball_mask)
+    cv2.imshow('bg', table.table_cur_mask)
+    cv2.imshow('bm', table.ball_colors)
     cv2.imshow('tm', test_mask)
 
 initTable('img\pooltableempty.png')
